@@ -141,8 +141,7 @@ void *GetNvramVariable(
 XString8 GetNvramVariableAsXString8(
   IN      CONST CHAR16   *VariableName,
   IN      EFI_GUID       *VendorGuid,
-  OUT     UINT32         *Attributes    OPTIONAL,
-  OUT     UINTN          *DataSize      OPTIONAL)
+  OUT     UINT32         *Attributes    OPTIONAL)
 {
   EFI_STATUS Status;
   XString8 returnValue;
@@ -165,9 +164,6 @@ XString8 GetNvramVariableAsXString8(
       IntDataSize = 0;
       returnValue.setEmpty();
     }
-  }
-  if (DataSize != NULL) {
-    *DataSize = IntDataSize;
   }
   returnValue.dataSized(IntDataSize+1)[IntDataSize] = 0;
   returnValue.updateSize();
@@ -333,6 +329,39 @@ IsDeletableVariable (
 
   return FALSE;
 }
+
+#ifdef JIEF_DEBUG
+EFI_STATUS
+DumpNvram()
+{
+  EFI_STATUS      Status = EFI_NOT_FOUND;
+  EFI_GUID        Guid;
+  XStringW        Name = L""_XSW;
+  UINTN           Size;
+
+  DbgHeader("DumpNvram");
+
+  ZeroMem (&Guid, sizeof(Guid));
+
+  do {
+    Size = Name.sizeInBytes();
+    Status = gRT->GetNextVariableName(&Size, Name.dataSized(Size+1), &Guid);
+    if (Status == EFI_BUFFER_TOO_SMALL) {
+      Status = gRT->GetNextVariableName (&Size, Name.dataSized(Size+1), &Guid);
+    }
+
+    if ( !EFI_ERROR(Status) ) {
+      XString8 s = GetNvramVariableAsXString8(Name.wc_str(), &Guid, NULL);
+      DBG("NVRAM : %s,%ls = '%s'\n", GuidLEToXString8(Guid).c_str(), Name.wc_str(), s.c_str());
+    }else if ( Status != EFI_NOT_FOUND ) {
+      DBG("GetNextVariableName returns '%s'\n", efiStrError(Status));
+      break;
+    }
+  } while( Status != EFI_NOT_FOUND );
+  return Status;
+}
+
+#endif
 
 // Reset Native NVRAM by vit9696, reworked and implemented by Sherlocks
 EFI_STATUS
@@ -964,9 +993,17 @@ LoadLatestNvramPlist()
   if (!EFI_ERROR(Status) && HandleCount > 0) {
     for (UINTN indexHandle = 0; indexHandle < HandleCount; indexHandle++) {
       RootDir = EfiLibOpenRoot(Handles[indexHandle]);
+      if ( RootDir == NULL ) {
+        DBG(" - [%lld] cannot open - skipping!\n", indexHandle);
+        continue;
+      }
       Status = RootDir->Open(RootDir, &FileHandle, L"nvram.plist", EFI_FILE_MODE_READ, 0);
       if (EFI_ERROR(Status)) {
-        DBG(" - [%lld] no nvram.plist - skipping!\n", indexHandle);
+        if ( Status == EFI_NOT_FOUND ) {
+          DBG(" - [%lld] no nvram.plist\n", indexHandle);
+        }else{
+          DBG(" - [%lld] Cannot open nvram.plist - %s\n", indexHandle, efiStrError(Status));
+        }
         continue;
       }
       FileInfo = EfiLibFileInfo(FileHandle);
@@ -1077,7 +1114,7 @@ LoadLatestNvramPlist()
  //   DBG(" nvram.plist not found!\n");
  // }
 #endif
-  DBG("loaded Status=%s\n", efiStrError(Status));
+  DBG("LoadLatestNvramPlist loaded Status=%s\n", efiStrError(Status));
   return Status;
 }
 
@@ -1096,7 +1133,7 @@ PutNvramPlistToRtVars ()
   if (gNvramDict == NULL) {
     /*Status = */LoadLatestNvramPlist();
     if (gNvramDict == NULL) {
-      DBG("PutNvramPlistToRtVars: nvram.plist not found\n");
+      DBG("PutNvramPlistToRtVars: no nvram.plist\n");
       return;
     }
   }

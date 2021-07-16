@@ -57,7 +57,7 @@
 
 //the function is not in the class and deals always with MainMenu
 //I made args as pointers to have an ability to call with NULL
-BOOLEAN AddLegacyEntry(IN const XStringW& FullTitle, IN const XStringW& _LoaderTitle, IN REFIT_VOLUME *Volume, IN const XIcon* Image, IN const XIcon* DriveImage, IN CHAR16 Hotkey, IN BOOLEAN CustomEntry)
+BOOLEAN AddLegacyEntry(IN const XStringW& FullTitle, IN const XStringW& _LoaderTitle, IN REFIT_VOLUME *Volume, IN const XIcon* Image, IN const XIcon* DriveImage, IN char32_t Hotkey, IN BOOLEAN CustomEntry)
 {
   LEGACY_ENTRY      *Entry, *SubEntry;
   REFIT_MENU_SCREEN *SubScreen;
@@ -109,7 +109,7 @@ DBG("      Volume->LegacyOS->Name=%ls\n", Volume->LegacyOS->Name.wc_str());
 //DBG("VolDesc=%ls\n", VolDesc);
 
   // prepare the menu entry
-  Entry = new LEGACY_ENTRY();
+  Entry = new LEGACY_ENTRY;
   if ( FullTitle.notEmpty() ) {
     Entry->Title = FullTitle;
   } else {
@@ -181,7 +181,7 @@ DBG("      Volume->LegacyOS->Name=%ls\n", Volume->LegacyOS->Name.wc_str());
   }
   
   // create the submenu
-  SubScreen = new REFIT_MENU_SCREEN();
+  SubScreen = new REFIT_MENU_SCREEN;
 //  SubScreen->Title = L"Boot Options for "_XSW + LoaderTitle + L" on "_XSW + VolDesc;
 	SubScreen->Title.SWPrintf("Boot Options for %ls on %ls", LoaderTitle.wc_str(), VolDesc.wc_str());
 
@@ -189,7 +189,7 @@ DBG("      Volume->LegacyOS->Name=%ls\n", Volume->LegacyOS->Name.wc_str());
   SubScreen->ID = SCREEN_BOOT;
   SubScreen->GetAnime();
   // default entry
-  SubEntry =  new LEGACY_ENTRY();
+  SubEntry =  new LEGACY_ENTRY;
   SubEntry->Title = L"Boot "_XSW + LoaderTitle;
 //  SubEntry->Tag           = TAG_LEGACY;
   SubEntry->Volume           = Entry->Volume;

@@ -272,7 +272,9 @@ void XTheme::Init()
   CharWidth = 9;  
   SelectionColor = 0x80808080;
   SelectionBackgroundPixel = { 0xef, 0xef, 0xef, 0xff };
-  FontFileName.setEmpty();     
+  FontFileName.setEmpty();
+
+  Icons.setEmpty();
 //  Theme.takeValueFrom("embedded");
   embedded = false;
   BannerFileName.setEmpty();    
@@ -329,6 +331,7 @@ void XTheme::Init()
 
   Cinema.setEmpty();
 }
+
 TagDict* XTheme::LoadTheme(const XStringW& TestTheme)
 {
   EFI_STATUS Status    = EFI_UNSUPPORTED;
@@ -674,13 +677,13 @@ XTheme::GetThemeTagSettings(const TagDict* DictPointer)
   if (AnimeArray != NULL) {
     INTN   Count = AnimeArray->arrayContent().size();
     for (INTN i = 0; i < Count; i++) {
-      Dict3 = AnimeArray->dictElementAt(i, "Anime"_XS8);
-      if ( !Dict3->isDict() ) {
-        MsgLog("MALFORMED PLIST : Anime must be an array of dict");
+      if ( !AnimeArray->elementAt(i)->isDict() ) {
+        MsgLog("MALFORMED PLIST : Anime must be an array of dict\n");
         continue;
       }
+      Dict3 = AnimeArray->dictElementAt(i, "Anime"_XS8);
 
-      FILM *NewFilm = new FILM();
+      FILM *NewFilm = new FILM;
 
       Prop = Dict3->propertyForKey("ID");
       NewFilm->SetIndex((UINTN)GetPropertyAsInteger(Prop, 1)); //default=main screen
